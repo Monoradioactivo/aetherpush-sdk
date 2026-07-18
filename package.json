@@ -1,6 +1,6 @@
 {
   "name": "@aetherpush/react-native-code-push",
-  "version": "1.5.0",
+  "version": "1.0.0",
   "description": "Aether OTA update client for React Native",
   "main": "CodePush.js",
   "typings": "typings/react-native-code-push.d.ts",
@@ -44,6 +44,9 @@
     "plist": "^3.0.4",
     "semver": "^7.3.5",
     "xcode": "3.0.1"
+  },
+  "peerDependencies": {
+    "react-native": ">=0.76.0"
   },
   "devDependencies": {
     "@types/assert": "^1.5.2",

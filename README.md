@@ -13,7 +13,8 @@ for the full lineage.
 ## Requirements
 
 - React Native 0.76 or newer, running the New Architecture (the default since
-  0.76).
+  0.76). Tested against 0.76 and 0.86, the latest stable at the time of
+  writing.
 - Apps on the legacy architecture (React Native 0.81 and earlier) should use
   Microsoft's original `react-native-code-push` SDK against Aether's legacy
   endpoints instead. See the Aether migration guide.
