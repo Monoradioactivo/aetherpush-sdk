@@ -5,7 +5,20 @@ import { AppState, Platform } from "react-native";
 import log from "./logging";
 import hoistStatics from 'hoist-non-react-statics';
 
-let NativeCodePush = require("react-native").NativeModules.CodePush;
+// On the New Architecture the native module is a TurboModule, resolved via
+// TurboModuleRegistry. Fall back to NativeModules for the legacy bridge.
+const ReactNative = require("react-native");
+let NativeCodePush =
+  (ReactNative.TurboModuleRegistry && ReactNative.TurboModuleRegistry.get("CodePush")) ||
+  ReactNative.NativeModules.CodePush;
+
+// TurboModules expose native constants through getConstants(); the legacy bridge
+// merges them onto the module object. Read whichever is available.
+const NativeCodePushConstants =
+  NativeCodePush && typeof NativeCodePush.getConstants === "function"
+    ? NativeCodePush.getConstants()
+    : NativeCodePush;
+
 const PackageMixins = require("./package-mixins")(NativeCodePush);
 
 const SERVER_PATH_MODES = ["aether", "codepush-legacy"];
@@ -632,10 +645,10 @@ if (NativeCodePush) {
     allowRestart: NativeCodePush.allow,
     clearUpdates: NativeCodePush.clearUpdates,
     InstallMode: {
-      IMMEDIATE: NativeCodePush.codePushInstallModeImmediate, // Restart the app immediately
-      ON_NEXT_RESTART: NativeCodePush.codePushInstallModeOnNextRestart, // Don't artificially restart the app. Allow the update to be "picked up" on the next app restart
-      ON_NEXT_RESUME: NativeCodePush.codePushInstallModeOnNextResume, // Restart the app the next time it is resumed from the background
-      ON_NEXT_SUSPEND: NativeCodePush.codePushInstallModeOnNextSuspend // Restart the app _while_ it is in the background,
+      IMMEDIATE: NativeCodePushConstants.codePushInstallModeImmediate, // Restart the app immediately
+      ON_NEXT_RESTART: NativeCodePushConstants.codePushInstallModeOnNextRestart, // Don't artificially restart the app. Allow the update to be "picked up" on the next app restart
+      ON_NEXT_RESUME: NativeCodePushConstants.codePushInstallModeOnNextResume, // Restart the app the next time it is resumed from the background
+      ON_NEXT_SUSPEND: NativeCodePushConstants.codePushInstallModeOnNextSuspend // Restart the app _while_ it is in the background,
       // but only after it has been in the background for "minimumBackgroundDuration" seconds (0 by default),
       // so that user context isn't lost unless the app suspension is long enough to not matter
     },
@@ -656,9 +669,9 @@ if (NativeCodePush) {
       MANUAL: 2
     },
     UpdateState: {
-      RUNNING: NativeCodePush.codePushUpdateStateRunning,
-      PENDING: NativeCodePush.codePushUpdateStatePending,
-      LATEST: NativeCodePush.codePushUpdateStateLatest
+      RUNNING: NativeCodePushConstants.codePushUpdateStateRunning,
+      PENDING: NativeCodePushConstants.codePushUpdateStatePending,
+      LATEST: NativeCodePushConstants.codePushUpdateStateLatest
     },
     DeploymentStatus: {
       FAILED: "DeploymentFailed",

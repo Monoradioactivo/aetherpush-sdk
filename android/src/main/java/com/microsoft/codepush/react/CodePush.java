@@ -5,22 +5,24 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 
+import com.facebook.react.BaseReactPackage;
 import com.facebook.react.ReactHost;
 import com.facebook.react.ReactInstanceManager;
-import com.facebook.react.ReactPackage;
-import com.facebook.react.bridge.JavaScriptModule;
 import com.facebook.react.bridge.NativeModule;
 import com.facebook.react.bridge.ReactApplicationContext;
-import com.facebook.react.uimanager.ViewManager;
+import com.facebook.react.module.model.ReactModuleInfo;
+import com.facebook.react.module.model.ReactModuleInfoProvider;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class CodePush implements ReactPackage {
+public class CodePush extends BaseReactPackage {
     private static final Object LOCK = new Object();
     private static volatile CodePush mCurrentInstance;
     public static CodePush getInstance(String deploymentKey, Context context, boolean isDebugMode) {
@@ -432,23 +434,40 @@ public class CodePush implements ReactPackage {
     }
 
     @Override
-    public List<NativeModule> createNativeModules(ReactApplicationContext reactApplicationContext) {
-        CodePushNativeModule codePushModule = new CodePushNativeModule(reactApplicationContext, this, mUpdateManager, mTelemetryManager, mSettingsManager);
-        CodePushDialog dialogModule = new CodePushDialog(reactApplicationContext);
-
-        List<NativeModule> nativeModules = new ArrayList<>();
-        nativeModules.add(codePushModule);
-        nativeModules.add(dialogModule);
-        return nativeModules;
-    }
-
-    // Deprecated in RN v0.47.
-    public List<Class<? extends JavaScriptModule>> createJSModules() {
-        return new ArrayList<>();
+    public NativeModule getModule(String name, ReactApplicationContext reactApplicationContext) {
+        switch (name) {
+            case "CodePush":
+                return new CodePushNativeModule(reactApplicationContext, this, mUpdateManager, mTelemetryManager, mSettingsManager);
+            case "CodePushDialog":
+                return new CodePushDialog(reactApplicationContext);
+            default:
+                return null;
+        }
     }
 
     @Override
-    public List<ViewManager> createViewManagers(ReactApplicationContext reactApplicationContext) {
-        return new ArrayList<>();
+    public ReactModuleInfoProvider getReactModuleInfoProvider() {
+        return () -> {
+            Map<String, ReactModuleInfo> moduleInfos = new HashMap<>();
+            // CodePush is a codegen TurboModule (implements NativeCodePushSpec).
+            moduleInfos.put("CodePush", new ReactModuleInfo(
+                "CodePush",
+                CodePushNativeModule.class.getName(),
+                false, // canOverrideExistingModule
+                false, // needsEagerInit
+                false, // isCxxModule
+                true   // isTurboModule
+            ));
+            // CodePushDialog is still a legacy module, handled via the interop layer.
+            moduleInfos.put("CodePushDialog", new ReactModuleInfo(
+                "CodePushDialog",
+                CodePushDialog.class.getName(),
+                false, // canOverrideExistingModule
+                false, // needsEagerInit
+                false, // isCxxModule
+                false  // isTurboModule
+            ));
+            return moduleInfos;
+        };
     }
 }

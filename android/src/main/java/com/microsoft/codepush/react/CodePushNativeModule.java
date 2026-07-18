@@ -25,6 +25,7 @@ import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.common.annotations.UnstableReactNativeAPI;
 import com.facebook.react.devsupport.interfaces.DevSupportManager;
+import com.facebook.react.module.annotations.ReactModule;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.modules.core.ReactChoreographer;
 import com.facebook.react.modules.debug.interfaces.DeveloperSettings;
@@ -46,7 +47,8 @@ import java.util.Map;
 import java.util.UUID;
 
 @OptIn(markerClass = UnstableReactNativeAPI.class)
-public class CodePushNativeModule extends BaseJavaModule {
+@ReactModule(name = "CodePush")
+public class CodePushNativeModule extends NativeCodePushSpec {
     private String mBinaryContentsHash = null;
     private String mClientUniqueId = null;
     private LifecycleEventListener mLifecycleEventListener = null;
@@ -81,7 +83,7 @@ public class CodePushNativeModule extends BaseJavaModule {
     }
 
     @Override
-    public Map<String, Object> getConstants() {
+    protected Map<String, Object> getTypedExportedConstants() {
         final Map<String, Object> constants = new HashMap<>();
 
         constants.put("codePushInstallModeImmediate", CodePushInstallMode.IMMEDIATE.getValue());
@@ -94,11 +96,6 @@ public class CodePushNativeModule extends BaseJavaModule {
         constants.put("codePushUpdateStateLatest", CodePushUpdateState.LATEST.getValue());
 
         return constants;
-    }
-
-    @Override
-    public String getName() {
-        return "CodePush";
     }
 
     private void loadBundleLegacy() {
@@ -515,7 +512,7 @@ public class CodePushNativeModule extends BaseJavaModule {
     }
 
     @ReactMethod
-    public void getUpdateMetadata(final int updateState, final Promise promise) {
+    public void getUpdateMetadata(final double updateState, final Promise promise) {
         AsyncTask<Void, Void, Void> asyncTask = new AsyncTask<Void, Void, Void>() {
             @Override
             protected Void doInBackground(Void... params) {
@@ -640,7 +637,7 @@ public class CodePushNativeModule extends BaseJavaModule {
     }
 
     @ReactMethod
-    public void installUpdate(final ReadableMap updatePackage, final int installMode, final int minimumBackgroundDuration, final Promise promise) {
+    public void installUpdate(final ReadableMap updatePackage, final double installMode, final double minimumBackgroundDuration, final Promise promise) {
         AsyncTask<Void, Void, Void> asyncTask = new AsyncTask<Void, Void, Void>() {
             @Override
             protected Void doInBackground(Void... params) {
@@ -664,7 +661,7 @@ public class CodePushNativeModule extends BaseJavaModule {
                         // Store the minimum duration on the native module as an instance
                         // variable instead of relying on a closure below, so that any
                         // subsequent resume-based installs could override it.
-                        CodePushNativeModule.this.mMinimumBackgroundDuration = minimumBackgroundDuration;
+                        CodePushNativeModule.this.mMinimumBackgroundDuration = (int) minimumBackgroundDuration;
 
                         if (mLifecycleEventListener == null) {
                             // Ensure we do not add the listener twice.
@@ -701,7 +698,7 @@ public class CodePushNativeModule extends BaseJavaModule {
                                     lastPausedDate = new Date();
 
                                     if (installMode == CodePushInstallMode.ON_NEXT_SUSPEND.getValue() && mSettingsManager.isPendingUpdate(null)) {
-                                        appSuspendHandler.postDelayed(loadBundleRunnable, minimumBackgroundDuration * 1000);
+                                        appSuspendHandler.postDelayed(loadBundleRunnable, (long) (minimumBackgroundDuration * 1000));
                                     }
                                 }
 
@@ -842,7 +839,7 @@ public class CodePushNativeModule extends BaseJavaModule {
     }
 
     @ReactMethod
-    public void removeListeners(Integer count) {
+    public void removeListeners(double count) {
         // Remove upstream listeners, stop unnecessary background tasks
     }
 
