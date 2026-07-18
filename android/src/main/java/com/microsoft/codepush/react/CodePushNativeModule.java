@@ -847,16 +847,26 @@ public class CodePushNativeModule extends BaseJavaModule {
     }
 
     public ReactHostDelegate getReactHostDelegate(ReactHostImpl reactHostImpl) {
-        try {
-            Class<?> clazz = reactHostImpl.getClass();
-            Field field = clazz.getDeclaredField("reactHostDelegate");
-            field.setAccessible(true);
+        // The field holding the delegate is named differently across React Native
+        // versions: RN 0.76+ declares it as "mReactHostDelegate", while earlier
+        // New Architecture builds used "reactHostDelegate". Probe both so restartApp()
+        // can swap the JS bundle instead of silently reloading the stale one.
+        String[] candidateFieldNames = { "mReactHostDelegate", "reactHostDelegate" };
+        for (String fieldName : candidateFieldNames) {
+            try {
+                Field field = reactHostImpl.getClass().getDeclaredField(fieldName);
+                field.setAccessible(true);
 
-            // Get the value of the field for the provided instance
-            return (ReactHostDelegate) field.get(reactHostImpl);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
-            return null;
+                // Get the value of the field for the provided instance
+                return (ReactHostDelegate) field.get(reactHostImpl);
+            } catch (NoSuchFieldException e) {
+                // Field name not present on this RN version - try the next candidate.
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+                return null;
+            }
         }
+        CodePushUtils.log("Unable to resolve the ReactHostDelegate field on ReactHostImpl - restartApp may not apply updates on this React Native version");
+        return null;
     }
 }
