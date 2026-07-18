@@ -37,7 +37,7 @@ Native's internals, so every RN release is a chance for a silent break.
   behavior as M1.
 - No change to the server contract. The `update_check` and `report_status`
   endpoints stay as they are.
-- No forced upgrade for consumers still on the bridge. See version support.
+- No forced upgrade for consumers still on the bridge. See the package shape below.
 
 ## The contract to freeze
 
