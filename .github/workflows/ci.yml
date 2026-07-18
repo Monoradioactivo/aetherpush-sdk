@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  branch-name:
+    name: Branch name policy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Validate branch prefix
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          if [[ "$BRANCH" =~ ^dependabot/ ]] || [[ "$BRANCH" =~ ^release-please-- ]]; then
+            echo "Skipping branch name policy for bot branch '$BRANCH'."
+            exit 0
+          fi
+          if [[ ! "$BRANCH" =~ ^(feat|fix|chore|refactor|docs)/ ]]; then
+            echo "::error::Branch '$BRANCH' must start with feat/, fix/, chore/, refactor/, or docs/"
+            exit 1
+          fi
+          echo "Branch '$BRANCH' is valid."
+
+  android:
+    name: Android (${{ matrix.sample }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sample: [ AetherSmoke076, AetherSmoke086 ]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: samples/${{ matrix.sample }}/package-lock.json
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install sample dependencies
+        working-directory: samples/${{ matrix.sample }}
+        run: npm ci
+
+      - name: Build Android debug
+        working-directory: samples/${{ matrix.sample }}/android
+        run: ./gradlew assembleDebug --no-daemon
+
+  ios:
+    name: iOS (${{ matrix.sample }})
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        sample: [ AetherSmoke076, AetherSmoke086 ]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: samples/${{ matrix.sample }}/package-lock.json
+
+      - name: Install sample dependencies
+        working-directory: samples/${{ matrix.sample }}
+        run: npm ci
+
+      - name: Install pods
+        working-directory: samples/${{ matrix.sample }}
+        run: |
+          bundle install
+          cd ios && bundle exec pod install
+
+      - name: Build iOS simulator
+        working-directory: samples/${{ matrix.sample }}/ios
+        run: |
+          set -o pipefail
+          xcodebuild -workspace ${{ matrix.sample }}.xcworkspace \
+            -scheme ${{ matrix.sample }} \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build | xcbeautify --renderer github-actions
