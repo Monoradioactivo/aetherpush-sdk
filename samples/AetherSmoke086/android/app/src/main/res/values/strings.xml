@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">AetherSmoke086</string>
+    <string moduleConfig="true" name="CodePushDeploymentKey">SmokePlaceholderKey</string>
+    <string moduleConfig="true" name="CodePushServerUrl">https://api-staging.aetherpush.com</string>
+</resources>

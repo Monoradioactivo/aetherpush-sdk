@@ -12,7 +12,7 @@ In order to integrate CodePush into your Android project, please perform the fol
 
     ```gradle
     ...
-    apply from: "../../node_modules/@revopush/react-native-code-push/android/codepush.gradle"
+    apply from: "../../node_modules/@aetherpush/react-native-code-push/android/codepush.gradle"
     ...
     ```
 
@@ -50,8 +50,8 @@ In order to integrate CodePush into your Android project, please perform the fol
 
    To let the CodePush runtime know which deployment it should query for updates, open your app's `strings.xml` file and 
 add a new string named `CodePushDeploymentKey`, whose value is the key of the deployment you want to configure this app against 
-(like the key for the `Staging` deployment for the `FooBar` app). You can retrieve this value by running `revopush deployment ls <appName> -k` 
-in the Revopush CLI (the `-k` or `--displayKeys` flag is necessary since keys aren't displayed by default) or take in [Revopush UI](https://app.revopush.org/applications) 
+(like the key for the `Staging` deployment for the `FooBar` app). You can retrieve this value by running `aether deployment ls <appName> -k` 
+in the Aether CLI (the `-k` or `--displayKeys` flag is necessary since keys aren't displayed by default) or take in the Aether dashboard 
 and copying the value of the `Key` column which corresponds to the deployment you want to use (see below). Note that using the deployment's name (like Staging) will not work. 
 The "friendly name" is intended only for authenticated management usage from the CLI, and not for public consumption within your app.
 

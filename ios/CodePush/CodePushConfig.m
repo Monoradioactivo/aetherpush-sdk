@@ -33,9 +33,9 @@ static NSString * const PublicKeyKey = @"publicKey";
 
     NSString *appVersion = [infoDictionary objectForKey:@"CFBundleShortVersionString"];
     NSString *buildVersion = [infoDictionary objectForKey:(NSString *)kCFBundleVersionKey];
-    NSString *deploymentKey = [infoDictionary objectForKey:@"CodePushDeploymentKey"];
-    NSString *serverURL = [infoDictionary objectForKey:@"CodePushServerURL"];
-    NSString *publicKey = [infoDictionary objectForKey:@"CodePushPublicKey"];
+    NSString *deploymentKey = [infoDictionary objectForKey:@"CodePushDeploymentKey"] ?: [infoDictionary objectForKey:@"AetherDeploymentKey"];
+    NSString *serverURL = [infoDictionary objectForKey:@"CodePushServerURL"] ?: [infoDictionary objectForKey:@"AetherServerURL"];
+    NSString *publicKey = [infoDictionary objectForKey:@"CodePushPublicKey"] ?: [infoDictionary objectForKey:@"AetherPublicKey"];
 
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     NSString *clientUniqueId = [userDefaults stringForKey:ClientUniqueIDConfigKey];
@@ -46,7 +46,7 @@ static NSString * const PublicKeyKey = @"publicKey";
     }
 
     if (!serverURL) {
-        serverURL = @"https://api.revopush.org/";
+        serverURL = @"https://api.aetherpush.com/";
     }
 
     _configDictionary = [NSMutableDictionary dictionary];

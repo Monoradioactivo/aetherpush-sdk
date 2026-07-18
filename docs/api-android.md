@@ -10,9 +10,9 @@ Since `autolinking` uses `react-native.config.js` to link plugins, constructors 
   ```
 
 - **Server Url** - used for specifying CodePush Server Url.
-  The Default value: "https://api.revopush.org" is overridden by adding your path to `strings.xml` with name `CodePushServerUrl`. CodePush automatically gets this property and will use this path to send requests. For example:
+  The Default value: "https://api.aetherpush.com" is overridden by adding your path to `strings.xml` with name `CodePushServerUrl`. CodePush automatically gets this property and will use this path to send requests. For example:
   ```xml
-  <string moduleConfig="true" name="CodePushServerUrl">https://api.revopush.org</string>
+  <string moduleConfig="true" name="CodePushServerUrl">https://api.aetherpush.com</string>
   ```
 
 The Java API is made available by importing the `com.microsoft.codepush.react.CodePush` class into your `MainActivity.java` file, and consists of a single public class named `CodePush`.
@@ -35,7 +35,7 @@ Constructs the CodePush client runtime and represents the `ReactPackage` instanc
 
 - **CodePush(String deploymentKey, Context context, boolean isDebugMode, Integer publicKeyResourceDescriptor)** - Equivalent to the previous constructor, but allows you to specify the public key resource descriptor needed to read public key content. Please refer to [Code Signing](setup-android.md#code-signing-setup) section for more details about the Code Signing Feature.
 
-- **CodePush(String deploymentKey, Context context, boolean isDebugMode, String serverUrl)** Constructor allows you to specify CodePush Server Url. The Default value: `"https://api.revopush.org"` is overridden by value specified in `serverUrl`.
+- **CodePush(String deploymentKey, Context context, boolean isDebugMode, String serverUrl)** Constructor allows you to specify CodePush Server Url. The Default value: `"https://api.aetherpush.com"` is overridden by value specified in `serverUrl`.
 
 ##### Public Methods
 
