@@ -124,6 +124,35 @@ RN releases.
 - Hermes bytecode on OTA bundles is unchanged by M2, but the smoke run is a reminder
   to keep releasing OTA bundles with the Hermes flag so they match the binary engine.
 
+## Update: conversion attempted, and the real Android blocker
+
+The Codegen spec landed and generates on both platforms. The next step, wiring
+the Android native side to it as a real TurboModule, was attempted and it
+surfaced a concrete blocker worth recording before anyone picks this up again.
+
+All three layers were converted and they compile: `CodePushNativeModule` extends
+the generated `NativeCodePushSpec` (constants moved to `getTypedExportedConstants`,
+`int` params widened to `double`), the `CodePush` package became a
+`BaseReactPackage` with `getModule` and `getReactModuleInfoProvider` (CodePush
+marked `isTurboModule = true`), and `CodePush.js` resolves the module through
+`TurboModuleRegistry.get` with a `NativeModules` fallback and reads constants via
+`getConstants()`.
+
+At runtime `TurboModuleRegistry.get("CodePush")` returns null and the app red
+screens. The app's generated Android `autolinking_ModuleProvider` (C++) is empty,
+so no JSI provider is registered for the SDK's codegen module. The cause is that
+the SDK ships a custom `react-native.config.js` with an explicit
+`packageInstance` (`CodePush.getInstance(R.string.CodePushDeploymentKey, ...)`),
+which it needs because the package cannot be built with a no-arg constructor: it
+requires the deployment key. That custom config routes the library through the
+legacy autolinking path, which does not generate the New-Architecture codegen C++
+provider.
+
+So the real M2 problem on Android is not the spec or the module code. It is
+reconciling CodePush's key-based package instantiation with codegen autolinking,
+so the TurboModule provider actually gets registered. That is the piece to solve
+first, and it needs someone comfortable in RN's New-Architecture autolinking.
+
 ## Suggested first step
 
 Land the Codegen spec (`NativeCodePush`) and implement `restartApp` and
