@@ -1,4 +1,4 @@
-import { AcquisitionManager as Sdk } from "code-push/script/acquisition-sdk";
+import { AcquisitionManager as Sdk } from "./acquisition-sdk";
 import { Alert } from "./AlertAdapter";
 import requestFetchAdapter from "./request-fetch-adapter";
 import { AppState, Platform } from "react-native";
@@ -7,6 +7,19 @@ import hoistStatics from 'hoist-non-react-statics';
 
 let NativeCodePush = require("react-native").NativeModules.CodePush;
 const PackageMixins = require("./package-mixins")(NativeCodePush);
+
+const SERVER_PATH_MODES = ["aether", "codepush-legacy"];
+let serverPathMode = "aether";
+
+function resolveServerPathMode(mode) {
+  if (mode === undefined || mode === null) {
+    return;
+  }
+  if (SERVER_PATH_MODES.indexOf(mode) === -1) {
+    throw new Error(`Invalid serverPathMode "${mode}". Expected one of: ${SERVER_PATH_MODES.join(", ")}.`);
+  }
+  serverPathMode = mode;
+}
 
 async function checkForUpdate(deploymentKey = null, handleBinaryVersionMismatchCallback = null) {
   /*
@@ -119,7 +132,7 @@ async function getUpdateMetadata(updateState) {
 
 function getPromisifiedSdk(requestFetchAdapter, config) {
   // Use dynamically overridden AcquisitionSdk during tests.
-  const sdk = new module.exports.AcquisitionSdk(requestFetchAdapter, config);
+  const sdk = new module.exports.AcquisitionSdk(requestFetchAdapter, { ...config, serverPathMode });
   sdk.queryUpdateWithCurrentPackage = (queryPackage) => {
     return new Promise((resolve, reject) => {
       module.exports.AcquisitionSdk.prototype.queryUpdateWithCurrentPackage.call(sdk, queryPackage, (err, update) => {
@@ -361,6 +374,7 @@ const sync = (() => {
  * when an update is available.
  */
 async function syncInternal(options = {}, syncStatusChangeCallback, downloadProgressCallback, handleBinaryVersionMismatchCallback) {
+  resolveServerPathMode(options.serverPathMode);
   let resolvedInstallMode;
   const syncOptions = {
     deploymentKey: null,
@@ -512,6 +526,7 @@ async function syncInternal(options = {}, syncStatusChangeCallback, downloadProg
 let CodePush;
 
 function codePushify(options = {}) {
+  resolveServerPathMode(options.serverPathMode);
   let React;
   let ReactNative = require("react-native");
 

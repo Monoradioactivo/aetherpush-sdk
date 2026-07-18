@@ -109,6 +109,14 @@ export interface SyncOptions {
     deploymentKey?: string;
 
     /**
+     * Specifies which URL path style the SDK uses when talking to the update server.
+     * "aether" (the default) uses Aether's canonical paths (/v1/public/aether/*), while
+     * "codepush-legacy" uses the legacy CodePush paths (/v0.1/public/codepush/*) for
+     * servers that only speak the legacy protocol.
+     */
+    serverPathMode?: "aether" | "codepush-legacy";
+
+    /**
      * Specifies when you would like to install optional updates (i.e. those that aren't marked as mandatory).
      * Defaults to codePush.InstallMode.ON_NEXT_RESTART.
      */
