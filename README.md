@@ -25,6 +25,10 @@ for the full lineage.
 npm install @aetherpush/react-native-code-push
 ```
 
+On iOS, set `platform :ios, '15.5'` in your Podfile (the React Native
+templates default to 15.1, but the SSZipArchive dependency of this pod
+requires 15.5).
+
 Then follow the platform setup guides:
 
 - [iOS setup](./docs/setup-ios.md)
