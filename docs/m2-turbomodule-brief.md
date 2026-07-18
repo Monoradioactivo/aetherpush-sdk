@@ -1,7 +1,8 @@
 # M2 brief: TurboModule rewrite (draft for review)
 
-Status: proposal. The decisions marked "open" below are the maintainer's to make;
-this document lays out the options so they can be decided against something concrete.
+Status: proposal with recommendations. Most of the earlier open questions are
+resolved by reading the RN 0.76 API (see the bundle-swap section). One real trade
+remains for the maintainer, called out under "Remaining judgment calls".
 
 ## Why M2
 
@@ -58,7 +59,7 @@ and the shim is one file with a test.
 4. Keep both entry points during a transition window so a consumer can opt into
    the TurboModule without a breaking release.
 
-## The reflection problem, concretely
+## The reflection problem, and what the RN API actually allows
 
 Today the Android restart path does roughly this: read the delegate off
 `ReactHostImpl` by field name, overwrite its `jsBundleLoader` by field name, then
@@ -66,41 +67,68 @@ call `reactHost.reload()`. Two of those three steps depend on private field name
 The `getReactHostDelegate` fix (probe both `mReactHostDelegate` and
 `reactHostDelegate`) keeps M1 working, but it is a patch on a fragile method.
 
-M2 should answer one question per platform: is there a supported way to point an
-existing `ReactHost` (Android) or `RCTHost` (iOS) at a new bundle and reload? If
-yes, use it and delete the reflection. If no, the shim stays, but it becomes a
-single isolated unit with a version probe, a fallback, and a test that fails
-loudly when the internals move, instead of a swallowed exception.
+The obvious next question is whether React Native exposes a supported way to point
+an existing host at a new bundle and reload. Reading the RN 0.76 source answers it,
+and the answer is different per platform.
 
-## Version support
+On Android, the public `ReactHost` interface exposes `reload(reason)`, `start`,
+`destroy`, and lifecycle hooks, but nothing to change the JS bundle. The loader
+lives on the `ReactHostDelegate`, is set at construction, and `reload()` re-reads
+it. There is no public bundle-swap in 0.76, which is exactly why the code reflects.
+The RN source even points at an open proposal (issue #556) for a supported path.
 
-Open decision. Two workable shapes:
+On iOS the situation is better. `RCTHost` already exposes
+`- (void)loadBundleAtURL:` and a bundle-URL provider block, and the current
+`CodePush.m` reloads through `RCTTriggerReloadCommandListeners` with the bundle URL
+coming from the host provider. That path is supported, not reflection, which is why
+iOS `restartApp()` worked untouched during the smoke run.
 
-- Single package, runtime branch. One published package detects the architecture
-  and RN version at runtime and picks the TurboModule or the bridge path. Simplest
-  for consumers, heavier to maintain.
-- Two majors. The bridge implementation stays on the current major for older RN,
-  the TurboModule ships in a new major. Cleaner separation, but consumers on old
-  RN never get M2 fixes unless backported.
+So M2 does not need a spike to answer this. iOS is already on supported APIs.
+Android is the platform with the real constraint.
 
-The memory from 7A holds: there is no hard RN version cliff to gate on. The
-interop layer is alive through 0.86 and no sunset has been announced, so M2 timing
-is a product decision, not a forced one.
+## Recommended package shape
 
-## Risks and open decisions
+Ship one package that branches at runtime: detect the architecture and RN version,
+then pick the TurboModule path or the bridge path. Consumers upgrade without
+changing anything, which matters for a fork that wants adoption across a wide RN
+range. The 7A finding still holds, there is no RN version cliff to gate on, so a
+forced major bump plus backports would buy separation the project does not need.
 
-- Whether React Native actually exposes a supported bundle-swap and reload on the
-  New Architecture. If it does not, M2 reduces the reflection to one shim but does
-  not eliminate it. This needs a spike before committing to scope.
-- Hermes bytecode handling on OTA bundles is unchanged by M2, but the smoke run is
-  a reminder to keep releasing OTA bundles with the Hermes flag so they match the
-  binary engine.
-- The package-shape decision above changes the migration guide and the CI matrix,
-  so it should be made first.
+The alternative, two major lines (bridge on the old major, TurboModule on a new
+one), is cleaner to read but leaves old-RN consumers without M2 fixes unless
+someone backports them. Prefer it only if maintaining both paths in one package
+turns out to be genuinely painful.
+
+## Android bundle swap: two options
+
+Since RN 0.76 gives Android no supported swap, M2 has to choose how to handle it.
+
+1. Isolate the reflection. Keep the delegate-field approach, but move it into one
+   small unit with a version probe, an explicit fallback, and a test that fails
+   loudly when a field moves, instead of a swallowed exception. Minimal change for
+   consumers. Recommended for the M2 scope.
+2. Ship a CodePush-aware `ReactHostDelegate` whose `jsBundleLoader` reads the
+   current package path dynamically, and have consumers wire it in when they build
+   their `ReactHost`. This removes the reflection entirely, at the cost of a small
+   integration step in the host app. Worth doing later if RN does not land a
+   supported API.
+
+Recommendation: option 1 for M2 so the public integration stays unchanged, and
+track issue #556 upstream. Revisit option 2 if the reflection keeps breaking on new
+RN releases.
+
+## Remaining judgment calls
+
+- Option 1 vs option 2 above for Android. This is the one real trade, consumer
+  simplicity against fully removing the reflection.
+- Hermes bytecode on OTA bundles is unchanged by M2, but the smoke run is a reminder
+  to keep releasing OTA bundles with the Hermes flag so they match the binary engine.
 
 ## Suggested first step
 
-A short spike on one platform: add the Codegen spec, implement `restartApp`
-and `getUpdateMetadata` as a TurboModule, and find out whether the bundle swap can
-be done without reflection. That answers the biggest open risk before the full
-rewrite is scoped.
+Land the Codegen spec (`NativeCodePush`) and implement `restartApp` and
+`getUpdateMetadata` as a TurboModule on both platforms, keeping the update manager,
+telemetry, and storage code underneath unchanged. iOS reuses its supported reload
+path directly. Android starts with the isolated-reflection shim (option 1). That
+gives a working TurboModule build to measure against before committing to the full
+port.
