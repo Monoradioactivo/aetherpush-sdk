@@ -50,7 +50,7 @@ public class CodePush implements ReactPackage {
 
     // Config properties.
     private String mDeploymentKey;
-    private static String mServerUrl = "https://api.revopush.org/";
+    private static String mServerUrl = "https://api.aetherpush.com/";
 
     private Context mContext;
     private final boolean mIsDebugMode;
@@ -140,10 +140,20 @@ public class CodePush implements ReactPackage {
     }
 
     private String getCustomPropertyFromStringsIfExist(String propertyName) {
+        String property = getPropertyFromStrings("CodePush" + propertyName, propertyName);
+
+        if (property == null) {
+            property = getPropertyFromStrings("Aether" + propertyName, propertyName);
+        }
+
+        return property;
+    }
+
+    private String getPropertyFromStrings(String resourceName, String propertyName) {
         String property;
 
         String packageName = mContext.getPackageName();
-        int resId = mContext.getResources().getIdentifier("CodePush" + propertyName, "string", packageName);
+        int resId = mContext.getResources().getIdentifier(resourceName, "string", packageName);
 
         if (resId != 0) {
             property = mContext.getString(resId);
