@@ -12,7 +12,7 @@ module.exports = {
       "Content-Type": "application/json",
       "X-CodePush-Plugin-Name": packageJson.name,
       "X-CodePush-Plugin-Version": packageJson.version,
-      "X-CodePush-SDK-Version": packageJson.dependencies["code-push"]
+      "X-CodePush-SDK-Version": packageJson.version
     };
 
     if (requestBody && typeof requestBody === "object") {
