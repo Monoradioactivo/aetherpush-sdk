@@ -1,11 +1,13 @@
 package com.microsoft.codepush.react;
 
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 
 import com.facebook.react.BaseReactPackage;
+import com.facebook.react.ReactPackage;
 import com.facebook.react.ReactHost;
 import com.facebook.react.ReactInstanceManager;
 import com.facebook.react.bridge.NativeModule;
@@ -22,7 +24,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class CodePush extends BaseReactPackage {
+// `implements ReactPackage` is redundant (BaseReactPackage already implements it),
+// but the RN CLI's package-class detection regex looks for that literal text.
+public class CodePush extends BaseReactPackage implements ReactPackage {
     private static final Object LOCK = new Object();
     private static volatile CodePush mCurrentInstance;
     public static CodePush getInstance(String deploymentKey, Context context, boolean isDebugMode) {
@@ -55,7 +59,7 @@ public class CodePush extends BaseReactPackage {
     private static String mServerUrl = "https://api.aetherpush.com/";
 
     private Context mContext;
-    private final boolean mIsDebugMode;
+    private boolean mIsDebugMode = false;
 
     private static String mPublicKey;
 
@@ -71,7 +75,27 @@ public class CodePush extends BaseReactPackage {
         return mServerUrl;
     }
 
+    // No-arg constructor so autolinking can instantiate the package. Without this
+    // the SDK needs a custom `packageInstance` in react-native.config.js, which
+    // makes the New-Architecture autolinking drop the codegen `libraryName` and
+    // never register the TurboModule provider. Initialization is deferred to
+    // ensureInitialized(), which runs when the module is first requested.
+    public CodePush() {
+    }
+
+    // Context-only constructor used by autolinking's packageInstance. Initializes
+    // eagerly (reading the deployment key from strings.xml) so the static
+    // getJSBundleFile(), which runs at app startup before any module is requested,
+    // finds an initialized instance.
+    public CodePush(Context context) {
+        ensureInitialized(context);
+    }
+
     private CodePush(String deploymentKey, Context context, boolean isDebugMode) {
+        initialize(deploymentKey, context, isDebugMode);
+    }
+
+    private void initialize(String deploymentKey, Context context, boolean isDebugMode) {
         mContext = context.getApplicationContext();
 
         mUpdateManager = new CodePushUpdateManager(context.getFilesDir().getAbsolutePath());
@@ -100,6 +124,19 @@ public class CodePush extends BaseReactPackage {
         // ignore liveReload when CodePush is initializing so that unneccessary cache could be cleared
         clearDebugCacheIfNeeded(false);
         initializeUpdateAfterRestart();
+    }
+
+    // Lazily initialize a no-arg-constructed package the first time the native
+    // module is requested. Reads the deployment key from strings.xml (as it already
+    // does for the server URL and public key) and infers debug mode from the app.
+    private synchronized void ensureInitialized(Context context) {
+        if (mUpdateManager != null) {
+            return;
+        }
+        mContext = context.getApplicationContext();
+        String deploymentKey = getCustomPropertyFromStringsIfExist("DeploymentKey");
+        boolean isDebugMode = (mContext.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+        initialize(deploymentKey, mContext, isDebugMode);
     }
 
     private CodePush(String deploymentKey, Context context, boolean isDebugMode, String serverUrl) {
@@ -437,6 +474,7 @@ public class CodePush extends BaseReactPackage {
     public NativeModule getModule(String name, ReactApplicationContext reactApplicationContext) {
         switch (name) {
             case "CodePush":
+                ensureInitialized(reactApplicationContext);
                 return new CodePushNativeModule(reactApplicationContext, this, mUpdateManager, mTelemetryManager, mSettingsManager);
             case "CodePushDialog":
                 return new CodePushDialog(reactApplicationContext);
