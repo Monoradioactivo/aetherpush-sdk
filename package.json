@@ -48,6 +48,14 @@
   "peerDependencies": {
     "react-native": ">=0.76.0"
   },
+  "codegenConfig": {
+    "name": "RNAetherCodePushSpec",
+    "type": "modules",
+    "jsSrcsDir": "src/specs",
+    "android": {
+      "javaPackageName": "com.microsoft.codepush.react"
+    }
+  },
   "devDependencies": {
     "@types/assert": "^1.5.2",
     "@types/mkdirp": "^1.0.1",
