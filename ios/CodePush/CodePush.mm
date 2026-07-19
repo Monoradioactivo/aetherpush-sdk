@@ -17,6 +17,16 @@
 
 #import "CodePush.h"
 
+#ifdef RCT_NEW_ARCH_ENABLED
+// The generated spec header is Objective-C++, so it can only be imported from
+// this .mm. Conform to the protocol via a class extension here rather than in
+// CodePush.h, which is imported by plain .m files in the pod.
+#import <RNAetherCodePushSpec/RNAetherCodePushSpec.h>
+
+@interface CodePush () <NativeCodePushSpec>
+@end
+#endif
+
 @interface CodePush () <RCTBridgeModule, RCTFrameUpdateObserver>
 @end
 
@@ -39,6 +49,13 @@
 }
 
 RCT_EXPORT_MODULE()
+
+#ifdef RCT_NEW_ARCH_ENABLED
+- (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:(const facebook::react::ObjCTurboModule::InitParams &)params
+{
+    return std::make_shared<facebook::react::NativeCodePushSpecJSI>(params);
+}
+#endif
 
 #pragma mark - Private constants
 
@@ -312,6 +329,13 @@ static NSString *const LatestRollbackCountKey = @"count";
              @"codePushUpdateStateLatest": @(CodePushUpdateStateLatest)
             };
 };
+
+// The New Architecture spec calls getConstants; the bridge path uses
+// constantsToExport. Both return the same enum map.
+- (NSDictionary *)getConstants
+{
+    return [self constantsToExport];
+}
 
 + (BOOL)requiresMainQueueSetup
 {
@@ -708,8 +732,8 @@ static NSString *const LatestRollbackCountKey = @"count";
  */
 RCT_EXPORT_METHOD(downloadUpdate:(NSDictionary*)updatePackage
                   notifyProgress:(BOOL)notifyProgress
-                        resolver:(RCTPromiseResolveBlock)resolve
-                        rejecter:(RCTPromiseRejectBlock)reject)
+                        resolve:(RCTPromiseResolveBlock)resolve
+                        reject:(RCTPromiseRejectBlock)reject)
 {
     NSDictionary *mutableUpdatePackage = [updatePackage mutableCopy];
     NSURL *binaryBundleURL = [CodePush binaryBundleURL];
@@ -804,7 +828,7 @@ RCT_EXPORT_METHOD(downloadUpdate:(NSDictionary*)updatePackage
  * app version, as well as the deployment key that was configured in the Info.plist file.
  */
 RCT_EXPORT_METHOD(getConfiguration:(RCTPromiseResolveBlock)resolve
-                          rejecter:(RCTPromiseRejectBlock)reject)
+                          reject:(RCTPromiseRejectBlock)reject)
 {
     NSDictionary *configuration = [[CodePushConfig current] configuration];
     NSError *error;
@@ -837,9 +861,9 @@ RCT_EXPORT_METHOD(getConfiguration:(RCTPromiseResolveBlock)resolve
 /*
  * This method is the native side of the CodePush.getUpdateMetadata method.
  */
-RCT_EXPORT_METHOD(getUpdateMetadata:(CodePushUpdateState)updateState
-                           resolver:(RCTPromiseResolveBlock)resolve
-                           rejecter:(RCTPromiseRejectBlock)reject)
+RCT_EXPORT_METHOD(getUpdateMetadata:(double)updateState
+                           resolve:(RCTPromiseResolveBlock)resolve
+                           reject:(RCTPromiseRejectBlock)reject)
 {
     NSError *error;
     NSMutableDictionary *package = [[CodePushPackage getCurrentPackage:&error] mutableCopy];
@@ -886,10 +910,10 @@ RCT_EXPORT_METHOD(getUpdateMetadata:(CodePushUpdateState)updateState
  * This method is the native side of the LocalPackage.install method.
  */
 RCT_EXPORT_METHOD(installUpdate:(NSDictionary*)updatePackage
-                    installMode:(CodePushInstallMode)installMode
-      minimumBackgroundDuration:(int)minimumBackgroundDuration
-                       resolver:(RCTPromiseResolveBlock)resolve
-                       rejecter:(RCTPromiseRejectBlock)reject)
+                    installMode:(double)installMode
+      minimumBackgroundDuration:(double)minimumBackgroundDuration
+                       resolve:(RCTPromiseResolveBlock)resolve
+                       reject:(RCTPromiseRejectBlock)reject)
 {
     NSError *error;
     [CodePushPackage installPackage:updatePackage
@@ -902,9 +926,9 @@ RCT_EXPORT_METHOD(installUpdate:(NSDictionary*)updatePackage
         [self savePendingUpdate:updatePackage[PackageHashKey]
                       isLoading:NO];
 
-        _installMode = installMode;
+        _installMode = (CodePushInstallMode)installMode;
         if (_installMode == CodePushInstallModeOnNextResume || _installMode == CodePushInstallModeOnNextSuspend) {
-            _minimumBackgroundDuration = minimumBackgroundDuration;
+            _minimumBackgroundDuration = (int)minimumBackgroundDuration;
 
             if (!_hasResumeListener) {
                 // Ensure we do not add the listener twice.
@@ -956,7 +980,7 @@ RCT_EXPORT_METHOD(setLatestRollbackInfo:(NSString *)packageHash
 
 
 RCT_EXPORT_METHOD(getLatestRollbackInfo:(RCTPromiseResolveBlock)resolve
-                  rejecter:(RCTPromiseRejectBlock)reject)
+                  reject:(RCTPromiseRejectBlock)reject)
 {
     NSDictionary *latestRollbackInfo = [[self class] getLatestRollbackInfo];
     resolve(latestRollbackInfo);
@@ -968,7 +992,7 @@ RCT_EXPORT_METHOD(getLatestRollbackInfo:(RCTPromiseResolveBlock)resolve
  */
 RCT_EXPORT_METHOD(isFirstRun:(NSString *)packageHash
                      resolve:(RCTPromiseResolveBlock)resolve
-                    rejecter:(RCTPromiseRejectBlock)reject)
+                    reject:(RCTPromiseRejectBlock)reject)
 {
     NSError *error;
     BOOL isFirstRun = _isFirstRunAfterUpdate
@@ -983,14 +1007,14 @@ RCT_EXPORT_METHOD(isFirstRun:(NSString *)packageHash
  * This method is the native side of the CodePush.notifyApplicationReady() method.
  */
 RCT_EXPORT_METHOD(notifyApplicationReady:(RCTPromiseResolveBlock)resolve
-                                rejecter:(RCTPromiseRejectBlock)reject)
+                                reject:(RCTPromiseRejectBlock)reject)
 {
     [CodePush removePendingUpdate];
     resolve(nil);
 }
 
 RCT_EXPORT_METHOD(allow:(RCTPromiseResolveBlock)resolve
-                    rejecter:(RCTPromiseRejectBlock)reject)
+                    reject:(RCTPromiseRejectBlock)reject)
 {
     CPLog(@"Re-allowing restarts.");
     _allowed = YES;
@@ -1006,14 +1030,14 @@ RCT_EXPORT_METHOD(allow:(RCTPromiseResolveBlock)resolve
 }
 
 RCT_EXPORT_METHOD(clearPendingRestart:(RCTPromiseResolveBlock)resolve
-                    rejecter:(RCTPromiseRejectBlock)reject)
+                    reject:(RCTPromiseRejectBlock)reject)
 {
     [_restartQueue removeAllObjects];
     resolve(nil);
 }
 
 RCT_EXPORT_METHOD(disallow:(RCTPromiseResolveBlock)resolve
-                    rejecter:(RCTPromiseRejectBlock)reject)
+                    reject:(RCTPromiseRejectBlock)reject)
 {
     CPLog(@"Disallowing restarts.");
     _allowed = NO;
@@ -1025,7 +1049,7 @@ RCT_EXPORT_METHOD(disallow:(RCTPromiseResolveBlock)resolve
  */
 RCT_EXPORT_METHOD(restartApp:(BOOL)onlyIfUpdateIsPending
                      resolve:(RCTPromiseResolveBlock)resolve
-                    rejecter:(RCTPromiseRejectBlock)reject)
+                    reject:(RCTPromiseRejectBlock)reject)
 {
     [self restartAppInternal:onlyIfUpdateIsPending];
     resolve(nil);
@@ -1062,7 +1086,7 @@ RCT_EXPORT_METHOD(downloadAndReplaceCurrentBundle:(NSString *)remoteBundleUrl)
  * or an update failed) and return its details (version label, status).
  */
 RCT_EXPORT_METHOD(getNewStatusReport:(RCTPromiseResolveBlock)resolve
-                            rejecter:(RCTPromiseRejectBlock)reject)
+                            reject:(RCTPromiseRejectBlock)reject)
 {
     if (needToReportRollback) {
         needToReportRollback = NO;
