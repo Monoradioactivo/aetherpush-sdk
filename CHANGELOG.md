@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.0](https://github.com/Monoradioactivo/aetherpush-sdk/compare/v1.1.0...v1.2.0) (2026-07-19)
+
+
+### Features
+
+* **ios:** implement CodePush as a New Architecture TurboModule ([#15](https://github.com/Monoradioactivo/aetherpush-sdk/issues/15)) ([4999bf5](https://github.com/Monoradioactivo/aetherpush-sdk/commit/4999bf59736a9fd8212cfa15f029c677f7607226))
+* **m2:** CodePush as a working TurboModule (New Architecture) ([#11](https://github.com/Monoradioactivo/aetherpush-sdk/issues/11)) ([0be825a](https://github.com/Monoradioactivo/aetherpush-sdk/commit/0be825acf59c0af1cc0bfbd9aae2639dadb5be56))
+* **m2:** split CodePushNativeModule into new-arch and old-arch variants ([#14](https://github.com/Monoradioactivo/aetherpush-sdk/issues/14)) ([60a0d85](https://github.com/Monoradioactivo/aetherpush-sdk/commit/60a0d854b342bb17f02e9178ee5d7cb256aec9c1))
+
 ## [1.1.0](https://github.com/Monoradioactivo/aetherpush-sdk/compare/v1.0.0...v1.1.0) (2026-07-19)
 
 
