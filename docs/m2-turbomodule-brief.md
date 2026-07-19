@@ -139,19 +139,35 @@ marked `isTurboModule = true`), and `CodePush.js` resolves the module through
 `getConstants()`.
 
 At runtime `TurboModuleRegistry.get("CodePush")` returns null and the app red
-screens. The app's generated Android `autolinking_ModuleProvider` (C++) is empty,
-so no JSI provider is registered for the SDK's codegen module. The cause is that
-the SDK ships a custom `react-native.config.js` with an explicit
-`packageInstance` (`CodePush.getInstance(R.string.CodePushDeploymentKey, ...)`),
-which it needs because the package cannot be built with a no-arg constructor: it
-requires the deployment key. That custom config routes the library through the
-legacy autolinking path, which does not generate the New-Architecture codegen C++
-provider.
+screens. Diagnostic logging confirmed the Java side works: the package's
+`getReactModuleInfoProvider` and `getModule("CodePush")` both fire, so the Java
+TurboModule is created. What is missing is the C++ JSI provider that exposes it
+to JS. The generated `autolinking_ModuleProvider` (C++) just returns nullptr for
+every name.
 
-So the real M2 problem on Android is not the spec or the module code. It is
-reconciling CodePush's key-based package instantiation with codegen autolinking,
-so the TurboModule provider actually gets registered. That is the piece to solve
-first, and it needs someone comfortable in RN's New-Architecture autolinking.
+The precise cause is one field. In the app's `autolinking.json`, the SDK's
+android entry has `libraryName: null`. The RN CLI derives `libraryName` from a
+library's `codegenConfig`, but it does not do so when the library also supplies a
+custom `packageInstance` in `react-native.config.js`. The SDK needs that custom
+`packageInstance` because CodePush cannot be built with a no-arg constructor: it
+takes the deployment key (`CodePush.getInstance(R.string.CodePushDeploymentKey,
+...)`). With no `libraryName`, the New-Architecture autolinking never emits the
+C++ TurboModule provider case, so `TurboModuleRegistry` has nothing to return.
+
+So the custom `packageInstance` and codegen autolinking are mutually exclusive in
+the CLI, and that is the real M2 problem on Android. Setting `libraryName` by hand
+in `react-native.config.js` does not help; the CLI drops it.
+
+The fix is to make CodePush auto-instantiable so the custom `packageInstance` can
+be removed and `libraryName` derives normally: give the package a no-arg
+constructor and move its context-dependent setup (managers, and reading the
+deployment key from `strings.xml`, which it already does for the server URL and
+public key) into `getModule(reactApplicationContext)`. That is a real refactor of
+the SDK's initialization, with its own knots to untie (the `final` debug flag, the
+singleton, detecting debug without the app's `BuildConfig`), and there may be
+further codegen/CMake integration behind it once `libraryName` is present. It
+wants a focused pass by someone comfortable in RN New-Architecture autolinking,
+not a quick patch.
 
 ## Suggested first step
 
