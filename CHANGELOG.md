@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.0](https://github.com/Monoradioactivo/aetherpush-sdk/compare/v1.0.0...v1.1.0) (2026-07-19)
+
+
+### Features
+
+* **m2:** add the frozen JS-to-native contract as a Codegen spec ([#9](https://github.com/Monoradioactivo/aetherpush-sdk/issues/9)) ([0132e4c](https://github.com/Monoradioactivo/aetherpush-sdk/commit/0132e4c8f29c3ec25a3ac3e42dc6cf7b04a9fdb8))
+
+
+### Bug Fixes
+
+* **android:** resolve ReactHostDelegate for restartApp on New Architecture ([#4](https://github.com/Monoradioactivo/aetherpush-sdk/issues/4)) ([f20e2e5](https://github.com/Monoradioactivo/aetherpush-sdk/commit/f20e2e5c551f604911fef19d78f91fcc26863437))
+* **samples:** make Metro resolve the file-linked SDK at runtime ([#3](https://github.com/Monoradioactivo/aetherpush-sdk/issues/3)) ([28e10a9](https://github.com/Monoradioactivo/aetherpush-sdk/commit/28e10a93ba9c5716f2d24ad299a917af9a59a963))
+* **samples:** set REACT_NATIVE_PATH so iOS Release builds can bundle JS ([#7](https://github.com/Monoradioactivo/aetherpush-sdk/issues/7)) ([212616d](https://github.com/Monoradioactivo/aetherpush-sdk/commit/212616d05128642faf0fbb3b49eee59f55f6f9dc))
+
 ## 1.0.0 (2026-07-18)
 
 
