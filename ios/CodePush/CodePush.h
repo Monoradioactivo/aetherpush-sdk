@@ -219,7 +219,15 @@ failCallback:(void (^)(NSError *err))failCallback;
 
 @end
 
+// C linkage so CodePush.mm (Objective-C++) resolves the symbol defined in the
+// plain-C CodePushUtils.m instead of a mangled C++ name.
+#ifdef __cplusplus
+extern "C" {
+#endif
 void CPLog(NSString *formatString, ...);
+#ifdef __cplusplus
+}
+#endif
 
 typedef NS_ENUM(NSInteger, CodePushInstallMode) {
     CodePushInstallModeImmediate,
