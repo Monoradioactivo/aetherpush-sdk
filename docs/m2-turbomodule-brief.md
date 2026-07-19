@@ -1,8 +1,8 @@
 # M2 brief: TurboModule rewrite (draft for review)
 
-Status: proposal with recommendations. Most of the earlier open questions are
-resolved by reading the RN 0.76 API (see the bundle-swap section). One real trade
-remains for the maintainer, called out under "Remaining judgment calls".
+Status: Android done. CodePush now runs as a real TurboModule on the New
+Architecture (shipped in #11). See "Update: Android TurboModule shipped" below.
+iOS and the old-architecture source-set split remain.
 
 ## Why M2
 
@@ -124,56 +124,46 @@ RN releases.
 - Hermes bytecode on OTA bundles is unchanged by M2, but the smoke run is a reminder
   to keep releasing OTA bundles with the Hermes flag so they match the binary engine.
 
-## Update: conversion attempted, and the real Android blocker
+## Update: Android TurboModule shipped
 
-The Codegen spec landed and generates on both platforms. The next step, wiring
-the Android native side to it as a real TurboModule, was attempted and it
-surfaced a concrete blocker worth recording before anyone picks this up again.
+All three layers are converted: `CodePushNativeModule` extends the generated
+`NativeCodePushSpec` (constants via `getTypedExportedConstants`, `int` params
+widened to `double`), the `CodePush` package is a `BaseReactPackage` with
+`getModule` and `getReactModuleInfoProvider`, and `CodePush.js` resolves the module
+through `TurboModuleRegistry.get` with a `NativeModules` fallback and reads
+constants via `getConstants()`. Verified end to end on an Android Pixel emulator
+(API 37, Release): the app renders, `TurboModuleRegistry.get("CodePush")` resolves,
+and the full sync/download/install flow runs against staging.
 
-All three layers were converted and they compile: `CodePushNativeModule` extends
-the generated `NativeCodePushSpec` (constants moved to `getTypedExportedConstants`,
-`int` params widened to `double`), the `CodePush` package became a
-`BaseReactPackage` with `getModule` and `getReactModuleInfoProvider` (CodePush
-marked `isTurboModule = true`), and `CodePush.js` resolves the module through
-`TurboModuleRegistry.get` with a `NativeModules` fallback and reads constants via
-`getConstants()`.
+Getting there meant fixing why `TurboModuleRegistry.get("CodePush")` returned null:
+the app's `autolinking_ModuleProvider` (C++) had no case for the module because the
+SDK's android autolinking `libraryName` was null. Two causes, both fixed:
 
-At runtime `TurboModuleRegistry.get("CodePush")` returns null and the app red
-screens. Diagnostic logging confirmed the Java side works: the package's
-`getReactModuleInfoProvider` and `getModule("CodePush")` both fire, so the Java
-TurboModule is created. What is missing is the C++ JSI provider that exposes it
-to JS. The generated `autolinking_ModuleProvider` (C++) just returns nullptr for
-every name.
+1. Package-class detection. The RN CLI's `findPackageClassName` regex matches
+   `implements ReactPackage` or `extends TurboReactPackage`. `CodePush extends
+   BaseReactPackage` matches neither, so the whole android dependency config
+   (libraryName included) came back null. Adding a redundant `implements
+   ReactPackage` makes the regex match, and `libraryName` then derives from
+   `codegenConfig`. (An earlier note here blamed the custom `packageInstance`; that
+   was wrong. `libraryName` derivation is independent of `packageInstance`.)
+2. Key at construction. CodePush needed a custom `packageInstance` to pass the
+   deployment key. It now has a `Context`-only constructor that reads the key from
+   `strings.xml` (as it already does for the server URL and public key), with
+   `packageInstance: new CodePush(getApplicationContext())`. Eager init keeps the
+   static `getJSBundleFile()` working at app startup.
 
-The precise cause is one field. In the app's `autolinking.json`, the SDK's
-android entry has `libraryName: null`. The RN CLI derives `libraryName` from a
-library's `codegenConfig`, but it does not do so when the library also supplies a
-custom `packageInstance` in `react-native.config.js`. The SDK needs that custom
-`packageInstance` because CodePush cannot be built with a no-arg constructor: it
-takes the deployment key (`CodePush.getInstance(R.string.CodePushDeploymentKey,
-...)`). With no `libraryName`, the New-Architecture autolinking never emits the
-C++ TurboModule provider case, so `TurboModuleRegistry` has nothing to return.
+Build gotcha: the RN gradle plugin caches the CLI autolinking config, so
+`react-native.config.js` changes need `rm -rf node_modules/.cache
+android/build/generated/autolinking`, `./gradlew --stop`, and `--rerun-tasks` to
+take effect.
 
-So the custom `packageInstance` and codegen autolinking are mutually exclusive in
-the CLI, and that is the real M2 problem on Android. Setting `libraryName` by hand
-in `react-native.config.js` does not help; the CLI drops it.
+## Remaining
 
-The fix is to make CodePush auto-instantiable so the custom `packageInstance` can
-be removed and `libraryName` derives normally: give the package a no-arg
-constructor and move its context-dependent setup (managers, and reading the
-deployment key from `strings.xml`, which it already does for the server URL and
-public key) into `getModule(reactApplicationContext)`. That is a real refactor of
-the SDK's initialization, with its own knots to untie (the `final` debug flag, the
-singleton, detecting debug without the app's `BuildConfig`), and there may be
-further codegen/CMake integration behind it once `libraryName` is present. It
-wants a focused pass by someone comfortable in RN New-Architecture autolinking,
-not a quick patch.
-
-## Suggested first step
-
-Land the Codegen spec (`NativeCodePush`) and implement `restartApp` and
-`getUpdateMetadata` as a TurboModule on both platforms, keeping the update manager,
-telemetry, and storage code underneath unchanged. iOS reuses its supported reload
-path directly. Android starts with the isolated-reflection shim (option 1). That
-gives a working TurboModule build to measure against before committing to the full
-port.
+- Old architecture. The module extends the codegen `NativeCodePushSpec`, which is
+  generated only under the New Architecture, so an old-arch build won't compile.
+  Needs a source-set split: a shared impl plus `src/newarch` (extends the spec) and
+  `src/oldarch` (legacy) selected by `build.gradle`. Only needed if the SDK keeps
+  old-arch support.
+- iOS as a real TurboModule. It runs today via interop (verified: the sample builds
+  and renders on the branch). Making it a true TurboModule means conforming
+  `CodePush.m` to the generated `RNAetherCodePushSpec` protocol and registering it.
