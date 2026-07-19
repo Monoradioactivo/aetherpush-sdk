@@ -1,26 +1,32 @@
 package com.microsoft.codepush.react;
 
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 
+import com.facebook.react.BaseReactPackage;
+import com.facebook.react.ReactPackage;
 import com.facebook.react.ReactHost;
 import com.facebook.react.ReactInstanceManager;
-import com.facebook.react.ReactPackage;
-import com.facebook.react.bridge.JavaScriptModule;
 import com.facebook.react.bridge.NativeModule;
 import com.facebook.react.bridge.ReactApplicationContext;
-import com.facebook.react.uimanager.ViewManager;
+import com.facebook.react.module.model.ReactModuleInfo;
+import com.facebook.react.module.model.ReactModuleInfoProvider;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class CodePush implements ReactPackage {
+// `implements ReactPackage` is redundant (BaseReactPackage already implements it),
+// but the RN CLI's package-class detection regex looks for that literal text.
+public class CodePush extends BaseReactPackage implements ReactPackage {
     private static final Object LOCK = new Object();
     private static volatile CodePush mCurrentInstance;
     public static CodePush getInstance(String deploymentKey, Context context, boolean isDebugMode) {
@@ -53,7 +59,7 @@ public class CodePush implements ReactPackage {
     private static String mServerUrl = "https://api.aetherpush.com/";
 
     private Context mContext;
-    private final boolean mIsDebugMode;
+    private boolean mIsDebugMode = false;
 
     private static String mPublicKey;
 
@@ -69,7 +75,27 @@ public class CodePush implements ReactPackage {
         return mServerUrl;
     }
 
+    // No-arg constructor so autolinking can instantiate the package. Without this
+    // the SDK needs a custom `packageInstance` in react-native.config.js, which
+    // makes the New-Architecture autolinking drop the codegen `libraryName` and
+    // never register the TurboModule provider. Initialization is deferred to
+    // ensureInitialized(), which runs when the module is first requested.
+    public CodePush() {
+    }
+
+    // Context-only constructor used by autolinking's packageInstance. Initializes
+    // eagerly (reading the deployment key from strings.xml) so the static
+    // getJSBundleFile(), which runs at app startup before any module is requested,
+    // finds an initialized instance.
+    public CodePush(Context context) {
+        ensureInitialized(context);
+    }
+
     private CodePush(String deploymentKey, Context context, boolean isDebugMode) {
+        initialize(deploymentKey, context, isDebugMode);
+    }
+
+    private void initialize(String deploymentKey, Context context, boolean isDebugMode) {
         mContext = context.getApplicationContext();
 
         mUpdateManager = new CodePushUpdateManager(context.getFilesDir().getAbsolutePath());
@@ -98,6 +124,19 @@ public class CodePush implements ReactPackage {
         // ignore liveReload when CodePush is initializing so that unneccessary cache could be cleared
         clearDebugCacheIfNeeded(false);
         initializeUpdateAfterRestart();
+    }
+
+    // Lazily initialize a no-arg-constructed package the first time the native
+    // module is requested. Reads the deployment key from strings.xml (as it already
+    // does for the server URL and public key) and infers debug mode from the app.
+    private synchronized void ensureInitialized(Context context) {
+        if (mUpdateManager != null) {
+            return;
+        }
+        mContext = context.getApplicationContext();
+        String deploymentKey = getCustomPropertyFromStringsIfExist("DeploymentKey");
+        boolean isDebugMode = (mContext.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+        initialize(deploymentKey, mContext, isDebugMode);
     }
 
     private CodePush(String deploymentKey, Context context, boolean isDebugMode, String serverUrl) {
@@ -432,23 +471,41 @@ public class CodePush implements ReactPackage {
     }
 
     @Override
-    public List<NativeModule> createNativeModules(ReactApplicationContext reactApplicationContext) {
-        CodePushNativeModule codePushModule = new CodePushNativeModule(reactApplicationContext, this, mUpdateManager, mTelemetryManager, mSettingsManager);
-        CodePushDialog dialogModule = new CodePushDialog(reactApplicationContext);
-
-        List<NativeModule> nativeModules = new ArrayList<>();
-        nativeModules.add(codePushModule);
-        nativeModules.add(dialogModule);
-        return nativeModules;
-    }
-
-    // Deprecated in RN v0.47.
-    public List<Class<? extends JavaScriptModule>> createJSModules() {
-        return new ArrayList<>();
+    public NativeModule getModule(String name, ReactApplicationContext reactApplicationContext) {
+        switch (name) {
+            case "CodePush":
+                ensureInitialized(reactApplicationContext);
+                return new CodePushNativeModule(reactApplicationContext, this, mUpdateManager, mTelemetryManager, mSettingsManager);
+            case "CodePushDialog":
+                return new CodePushDialog(reactApplicationContext);
+            default:
+                return null;
+        }
     }
 
     @Override
-    public List<ViewManager> createViewManagers(ReactApplicationContext reactApplicationContext) {
-        return new ArrayList<>();
+    public ReactModuleInfoProvider getReactModuleInfoProvider() {
+        return () -> {
+            Map<String, ReactModuleInfo> moduleInfos = new HashMap<>();
+            // CodePush is a codegen TurboModule (implements NativeCodePushSpec).
+            moduleInfos.put("CodePush", new ReactModuleInfo(
+                "CodePush",
+                CodePushNativeModule.class.getName(),
+                false, // canOverrideExistingModule
+                false, // needsEagerInit
+                false, // isCxxModule
+                true   // isTurboModule
+            ));
+            // CodePushDialog is still a legacy module, handled via the interop layer.
+            moduleInfos.put("CodePushDialog", new ReactModuleInfo(
+                "CodePushDialog",
+                CodePushDialog.class.getName(),
+                false, // canOverrideExistingModule
+                false, // needsEagerInit
+                false, // isCxxModule
+                false  // isTurboModule
+            ));
+            return moduleInfos;
+        };
     }
 }
