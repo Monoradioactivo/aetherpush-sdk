@@ -46,9 +46,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+// Shared implementation for both architectures. The per-architecture
+// CodePushNativeModule subclasses (src/newarch and src/oldarch) delegate to this.
 @OptIn(markerClass = UnstableReactNativeAPI.class)
-@ReactModule(name = "CodePush")
-public class CodePushNativeModule extends NativeCodePushSpec {
+public class CodePushNativeModuleImpl {
+    static final String NAME = "CodePush";
+
+    private final ReactApplicationContext mReactApplicationContext;
     private String mBinaryContentsHash = null;
     private String mClientUniqueId = null;
     private LifecycleEventListener mLifecycleEventListener = null;
@@ -63,8 +67,8 @@ public class CodePushNativeModule extends NativeCodePushSpec {
     private  boolean _restartInProgress = false;
     private  ArrayList<Boolean> _restartQueue = new ArrayList<>();
 
-    public CodePushNativeModule(ReactApplicationContext reactContext, CodePush codePush, CodePushUpdateManager codePushUpdateManager, CodePushTelemetryManager codePushTelemetryManager, SettingsManager settingsManager) {
-        super(reactContext);
+    public CodePushNativeModuleImpl(ReactApplicationContext reactContext, CodePush codePush, CodePushUpdateManager codePushUpdateManager, CodePushTelemetryManager codePushTelemetryManager, SettingsManager settingsManager) {
+        this.mReactApplicationContext = reactContext;
 
         mCodePush = codePush;
         mSettingsManager = settingsManager;
@@ -82,8 +86,7 @@ public class CodePushNativeModule extends NativeCodePushSpec {
         }
     }
 
-    @Override
-    protected Map<String, Object> getTypedExportedConstants() {
+    public Map<String, Object> getConstants() {
         final Map<String, Object> constants = new HashMap<>();
 
         constants.put("codePushInstallModeImmediate", CodePushInstallMode.IMMEDIATE.getValue());
@@ -99,7 +102,7 @@ public class CodePushNativeModule extends NativeCodePushSpec {
     }
 
     private void loadBundleLegacy() {
-        final Activity currentActivity = getReactApplicationContext().getCurrentActivity();
+        final Activity currentActivity = mReactApplicationContext.getCurrentActivity();
         if (currentActivity == null) {
             // The currentActivity can be null if it is backgrounded / destroyed, so we simply
             // no-op to prevent any null pointer exceptions.
@@ -121,7 +124,7 @@ public class CodePushNativeModule extends NativeCodePushSpec {
         try {
             JSBundleLoader latestJSBundleLoader;
             if (latestJSBundleFile.toLowerCase().startsWith("assets://")) {
-                latestJSBundleLoader = JSBundleLoader.createAssetLoader(getReactApplicationContext(), latestJSBundleFile, false);
+                latestJSBundleLoader = JSBundleLoader.createAssetLoader(mReactApplicationContext, latestJSBundleFile, false);
             } else {
                 latestJSBundleLoader = JSBundleLoader.createFileLoader(latestJSBundleFile);
             }
@@ -141,7 +144,7 @@ public class CodePushNativeModule extends NativeCodePushSpec {
         try {
             JSBundleLoader latestJSBundleLoader;
             if (latestJSBundleFile.toLowerCase().startsWith("assets://")) {
-                latestJSBundleLoader = JSBundleLoader.createAssetLoader(getReactApplicationContext(), latestJSBundleFile, false);
+                latestJSBundleLoader = JSBundleLoader.createAssetLoader(mReactApplicationContext, latestJSBundleFile, false);
             } else {
                 latestJSBundleLoader = JSBundleLoader.createFileLoader(latestJSBundleFile);
             }
@@ -312,7 +315,7 @@ public class CodePushNativeModule extends NativeCodePushSpec {
     private void clearLifecycleEventListener() {
         // Remove LifecycleEventListener to prevent infinite restart loop
         if (mLifecycleEventListener != null) {
-            getReactApplicationContext().removeLifecycleEventListener(mLifecycleEventListener);
+            mReactApplicationContext.removeLifecycleEventListener(mLifecycleEventListener);
             mLifecycleEventListener = null;
         }
     }
@@ -324,7 +327,7 @@ public class CodePushNativeModule extends NativeCodePushSpec {
             return instanceManager;
         }
 
-        final Activity currentActivity = getReactApplicationContext().getCurrentActivity();
+        final Activity currentActivity = mReactApplicationContext.getCurrentActivity();
         if (currentActivity == null) {
             return null;
         }
@@ -341,7 +344,7 @@ public class CodePushNativeModule extends NativeCodePushSpec {
             return reactHost;
         }
 
-        final Activity currentActivity = getReactApplicationContext().getCurrentActivity();
+        final Activity currentActivity = mReactApplicationContext.getCurrentActivity();
         if (currentActivity == null) {
             return null;
         }
@@ -376,7 +379,6 @@ public class CodePushNativeModule extends NativeCodePushSpec {
         }
     }
 
-    @ReactMethod
     public void allow(Promise promise) {
         CodePushUtils.log("Re-allowing restarts");
         this._allowed = true;
@@ -392,14 +394,12 @@ public class CodePushNativeModule extends NativeCodePushSpec {
         return;
     }
 
-    @ReactMethod
     public void clearPendingRestart(Promise promise) {
         this._restartQueue.clear();
         promise.resolve(null);
         return;
     }
 
-    @ReactMethod
     public void disallow(Promise promise) {
         CodePushUtils.log("Disallowing restarts");
         this._allowed = false;
@@ -407,7 +407,6 @@ public class CodePushNativeModule extends NativeCodePushSpec {
         return;
     }
 
-    @ReactMethod
     public void restartApp(boolean onlyIfUpdateIsPending, Promise promise) {
         try {
             restartAppInternal(onlyIfUpdateIsPending);
@@ -418,7 +417,6 @@ public class CodePushNativeModule extends NativeCodePushSpec {
         }
     }
 
-    @ReactMethod
     public void downloadUpdate(final ReadableMap updatePackage, final boolean notifyProgress, final Promise promise) {
         AsyncTask<Void, Void, Void> asyncTask = new AsyncTask<Void, Void, Void>() {
             @Override
@@ -448,7 +446,7 @@ public class CodePushNativeModule extends NativeCodePushSpec {
                             }
 
                             hasScheduledNextFrame = true;
-                            getReactApplicationContext().runOnUiQueueThread(new Runnable() {
+                            mReactApplicationContext.runOnUiQueueThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     ReactChoreographer.getInstance().postFrameCallback(ReactChoreographer.CallbackType.TIMERS_EVENTS, new Choreographer.FrameCallback() {
@@ -466,7 +464,7 @@ public class CodePushNativeModule extends NativeCodePushSpec {
                         }
 
                         public void dispatchDownloadProgressEvent() {
-                            getReactApplicationContext()
+                            mReactApplicationContext
                                     .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                                     .emit(CodePushConstants.DOWNLOAD_PROGRESS_EVENT_NAME, latestDownloadProgress.createWritableMap());
                         }
@@ -490,7 +488,6 @@ public class CodePushNativeModule extends NativeCodePushSpec {
         asyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
-    @ReactMethod
     public void getConfiguration(Promise promise) {
         try {
             WritableMap configMap =  Arguments.createMap();
@@ -511,8 +508,7 @@ public class CodePushNativeModule extends NativeCodePushSpec {
         }
     }
 
-    @ReactMethod
-    public void getUpdateMetadata(final double updateState, final Promise promise) {
+    public void getUpdateMetadata(final int updateState, final Promise promise) {
         AsyncTask<Void, Void, Void> asyncTask = new AsyncTask<Void, Void, Void>() {
             @Override
             protected Void doInBackground(Void... params) {
@@ -579,7 +575,6 @@ public class CodePushNativeModule extends NativeCodePushSpec {
         asyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
-    @ReactMethod
     public void getNewStatusReport(final Promise promise) {
         AsyncTask<Void, Void, Void> asyncTask = new AsyncTask<Void, Void, Void>() {
             @Override
@@ -636,8 +631,7 @@ public class CodePushNativeModule extends NativeCodePushSpec {
         asyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
-    @ReactMethod
-    public void installUpdate(final ReadableMap updatePackage, final double installMode, final double minimumBackgroundDuration, final Promise promise) {
+    public void installUpdate(final ReadableMap updatePackage, final int installMode, final int minimumBackgroundDuration, final Promise promise) {
         AsyncTask<Void, Void, Void> asyncTask = new AsyncTask<Void, Void, Void>() {
             @Override
             protected Void doInBackground(Void... params) {
@@ -661,7 +655,7 @@ public class CodePushNativeModule extends NativeCodePushSpec {
                         // Store the minimum duration on the native module as an instance
                         // variable instead of relying on a closure below, so that any
                         // subsequent resume-based installs could override it.
-                        CodePushNativeModule.this.mMinimumBackgroundDuration = (int) minimumBackgroundDuration;
+                        CodePushNativeModuleImpl.this.mMinimumBackgroundDuration = minimumBackgroundDuration;
 
                         if (mLifecycleEventListener == null) {
                             // Ensure we do not add the listener twice.
@@ -684,7 +678,7 @@ public class CodePushNativeModule extends NativeCodePushSpec {
                                     if (lastPausedDate != null) {
                                         long durationInBackground = (new Date().getTime() - lastPausedDate.getTime()) / 1000;
                                         if (installMode == CodePushInstallMode.IMMEDIATE.getValue()
-                                                || durationInBackground >= CodePushNativeModule.this.mMinimumBackgroundDuration) {
+                                                || durationInBackground >= CodePushNativeModuleImpl.this.mMinimumBackgroundDuration) {
                                             CodePushUtils.log("Loading bundle on resume");
                                             restartAppInternal(false);
                                         }
@@ -707,7 +701,7 @@ public class CodePushNativeModule extends NativeCodePushSpec {
                                 }
                             };
 
-                            getReactApplicationContext().addLifecycleEventListener(mLifecycleEventListener);
+                            mReactApplicationContext.addLifecycleEventListener(mLifecycleEventListener);
                         }
                     }
 
@@ -724,7 +718,6 @@ public class CodePushNativeModule extends NativeCodePushSpec {
         asyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
-    @ReactMethod
     public void isFailedUpdate(String packageHash, Promise promise) {
         try {
             promise.resolve(mSettingsManager.isFailedHash(packageHash));
@@ -734,7 +727,6 @@ public class CodePushNativeModule extends NativeCodePushSpec {
         }
     }
 
-    @ReactMethod
     public void getLatestRollbackInfo(Promise promise) {
         try {
             JSONObject latestRollbackInfo = mSettingsManager.getLatestRollbackInfo();
@@ -749,7 +741,6 @@ public class CodePushNativeModule extends NativeCodePushSpec {
         }
     }
 
-    @ReactMethod
     public void setLatestRollbackInfo(String packageHash, Promise promise) {
         try {
             mSettingsManager.setLatestRollbackInfo(packageHash);
@@ -760,7 +751,6 @@ public class CodePushNativeModule extends NativeCodePushSpec {
         }
     }
 
-    @ReactMethod
     public void isFirstRun(String packageHash, Promise promise) {
         try {
             boolean isFirstRun = mCodePush.didUpdate()
@@ -774,7 +764,6 @@ public class CodePushNativeModule extends NativeCodePushSpec {
         }
     }
 
-    @ReactMethod
     public void notifyApplicationReady(Promise promise) {
         try {
             mSettingsManager.removePendingUpdate();
@@ -785,7 +774,6 @@ public class CodePushNativeModule extends NativeCodePushSpec {
         }
     }
 
-    @ReactMethod
     public void recordStatusReported(ReadableMap statusReport) {
         try {
             mTelemetryManager.recordStatusReported(statusReport);
@@ -794,7 +782,6 @@ public class CodePushNativeModule extends NativeCodePushSpec {
         }
     }
 
-    @ReactMethod
     public void saveStatusReportForRetry(ReadableMap statusReport) {
         try {
             mTelemetryManager.saveStatusReportForRetry(statusReport);
@@ -803,7 +790,6 @@ public class CodePushNativeModule extends NativeCodePushSpec {
         }
     }
 
-    @ReactMethod
     // Replaces the current bundle with the one downloaded from removeBundleUrl.
     // It is only to be used during tests. No-ops if the test configuration flag is not set.
     public void downloadAndReplaceCurrentBundle(String remoteBundleUrl) {
@@ -827,19 +813,16 @@ public class CodePushNativeModule extends NativeCodePushSpec {
      * this method automatically when needed in other cases) as it could lead to unpredictable
      * behavior.
      */
-    @ReactMethod
     public void clearUpdates() {
         CodePushUtils.log("Clearing updates.");
         mCodePush.clearUpdates();
     }
 
-    @ReactMethod
     public void addListener(String eventName) {
         // Set up any upstream listeners or background tasks as necessary
     }
 
-    @ReactMethod
-    public void removeListeners(double count) {
+    public void removeListeners(int count) {
         // Remove upstream listeners, stop unnecessary background tasks
     }
 
