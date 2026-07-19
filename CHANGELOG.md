@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/Monoradioactivo/aetherpush-sdk/compare/v1.2.0...v1.2.1) (2026-07-19)
+
+
+### Bug Fixes
+
+* **js:** send the package version in the X-CodePush-SDK-Version header ([#17](https://github.com/Monoradioactivo/aetherpush-sdk/issues/17)) ([2c910e6](https://github.com/Monoradioactivo/aetherpush-sdk/commit/2c910e6ffe96186df34e5b69bac88834adb0b34f))
+
 ## [1.2.0](https://github.com/Monoradioactivo/aetherpush-sdk/compare/v1.1.0...v1.2.0) (2026-07-19)
 
 

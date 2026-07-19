@@ -1,6 +1,6 @@
 {
   "name": "@aetherpush/react-native-code-push",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Aether OTA update client for React Native",
   "main": "CodePush.js",
   "typings": "typings/react-native-code-push.d.ts",
