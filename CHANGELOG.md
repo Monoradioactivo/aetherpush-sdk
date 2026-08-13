@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/Monoradioactivo/aetherpush-sdk/compare/v1.2.1...v1.2.2) (2026-08-13)
+
+
+### Bug Fixes
+
+* **deps:** update dependency com.nimbusds:nimbus-jose-jwt to v9.37.4 [security] ([#22](https://github.com/Monoradioactivo/aetherpush-sdk/issues/22)) ([1fddbab](https://github.com/Monoradioactivo/aetherpush-sdk/commit/1fddbab632ae8edf4eee7ac4134ea828a26510c0))
+
 ## [1.2.1](https://github.com/Monoradioactivo/aetherpush-sdk/compare/v1.2.0...v1.2.1) (2026-07-19)
 
 
