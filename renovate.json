@@ -32,6 +32,13 @@
         "patch"
       ],
       "groupName": "github actions (non-major)"
+    },
+    {
+      "matchFileNames": [
+        "samples/AetherSmoke076/**",
+        "Examples/**"
+      ],
+      "enabled": false
     }
   ],
   "minimumReleaseAge": "3 days"
