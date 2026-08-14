@@ -14,31 +14,20 @@
       "dependencyDashboardApproval": true
     },
     {
-      "matchDepTypes": [
-        "devDependencies"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
-      "groupName": "dev dependencies (non-major)"
-    },
-    {
-      "matchManagers": [
-        "github-actions"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
-      "groupName": "github actions (non-major)"
-    },
-    {
       "matchFileNames": [
         "samples/**",
         "Examples/**"
       ],
       "enabled": false
+    },
+    {
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "groupName": "weekly updates"
     }
   ],
   "minimumReleaseAge": "3 days",
