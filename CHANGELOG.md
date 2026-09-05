@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/Monoradioactivo/aetherpush-sdk/compare/v1.2.2...v1.3.0) (2026-09-05)
+
+
+### Features
+
+* **acquisition:** send optional client telemetry dimensions ([#47](https://github.com/Monoradioactivo/aetherpush-sdk/issues/47)) ([5aa9136](https://github.com/Monoradioactivo/aetherpush-sdk/commit/5aa9136de71e6cfe434621e347aab9fba261c78c))
+
 ## [1.2.2](https://github.com/Monoradioactivo/aetherpush-sdk/compare/v1.2.1...v1.2.2) (2026-08-13)
 
 
