@@ -1,4 +1,5 @@
 import { CodePushDeployStatusError, CodePushHttpError, CodePushPackageError } from "./code-push-error";
+import { attachAcquisitionDimensions } from "./acquisition-dimensions";
 
 const SERVER_PATH_PREFIXES = {
   "aether": "v1/public/aether/",
@@ -51,6 +52,7 @@ export class AcquisitionManager {
       label: currentPackage.label,
       client_unique_id: this._clientUniqueId
     };
+    attachAcquisitionDimensions(updateRequest);
     const requestUrl = this._serverUrl + this._publicPrefixUrl + "update_check?" + queryStringify(updateRequest);
     this._httpRequester.request(0, requestUrl, (error, response) => {
       if (error) {
@@ -140,6 +142,7 @@ export class AcquisitionManager {
     if (previousDeploymentKey) {
       body.previous_deployment_key = previousDeploymentKey;
     }
+    attachAcquisitionDimensions(body);
     callback = typeof arguments[arguments.length - 1] === "function" && arguments[arguments.length - 1];
     this._httpRequester.request(2, url, JSON.stringify(body), (error, response) => {
       if (callback) {
@@ -170,6 +173,7 @@ export class AcquisitionManager {
       deployment_key: this._deploymentKey,
       label: downloadedPackage.label
     };
+    attachAcquisitionDimensions(body);
     this._httpRequester.request(2, url, JSON.stringify(body), (error, response) => {
       if (callback) {
         if (error) {
