@@ -28,8 +28,21 @@
         "digest"
       ],
       "groupName": "weekly updates"
+    },
+    {
+      "matchManagers": [
+        "bundler"
+      ],
+      "enabled": true,
+      "rangeStrategy": "in-range-only",
+      "groupName": "sample gem locks"
     }
   ],
+  "bundler": {
+    "lockFileMaintenance": {
+      "enabled": true
+    }
+  },
   "minimumReleaseAge": "3 days",
   "timezone": "America/Mexico_City",
   "schedule": [

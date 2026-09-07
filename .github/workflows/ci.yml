@@ -88,6 +88,8 @@ jobs:
 
       - name: Install pods
         working-directory: samples/${{ matrix.sample }}
+        env:
+          BUNDLE_FROZEN: "true"
         run: |
           bundle install
           cd ios && bundle exec pod install
