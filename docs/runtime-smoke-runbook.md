@@ -51,12 +51,23 @@ cd samples/AetherSmoke076
 npm install
 
 # iOS
-(cd ios && pod install)
+bundle install
+(cd ios && bundle exec pod install)
 npx react-native run-ios --simulator "iPhone 17 Pro"
 
 # Android (JDK 17 + ANDROID_HOME exported)
 npx react-native run-android
 ```
+
+Each sample tracks `ios/Podfile.lock`. Use `bundle exec pod install` so CocoaPods
+matches the version in that sample's `Gemfile.lock`. A system `pod` rewrites the
+lock's `COCOAPODS:` stamp and the checksums.
+
+Regenerate and commit the lock when the sample's React Native version changes,
+when `CodePush.podspec` changes a CDN pin, or when the SDK `package.json`
+version changes (that number is the CodePush pod version). Do not commit the
+generated `.xcworkspace`. Renovate does not update these locks, so a yanked or
+vulnerable locked trunk pod stays until someone regenerates.
 
 > Metro must be able to follow the `file:../..` symlink, which points outside the
 > project root. The committed `metro.config.js` watches the SDK root and pins
