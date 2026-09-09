@@ -67,7 +67,6 @@
     "code-push-plugin-testing-framework": "file:./code-push-plugin-testing-framework",
     "del": "6.1.1",
     "express": "latest",
-    "js-yaml": "^4.3.2",
     "mkdirp": "latest",
     "mocha": "^9.2.0",
     "q": "^1.5.1",

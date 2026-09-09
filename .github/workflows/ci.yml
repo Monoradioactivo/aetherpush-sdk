@@ -38,17 +38,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Install PyYAML
+        run: pip install --user pyyaml
 
       - name: Workflow run interpolation tests
-        run: node --test scripts/workflow-run-interpolation.test.mjs
+        run: python3 scripts/workflow-run-interpolation.test.py
 
   android:
     name: Android (${{ matrix.sample }})
