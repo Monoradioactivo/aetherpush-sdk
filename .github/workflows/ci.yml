@@ -19,8 +19,9 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - name: Validate branch prefix
+        env:
+          BRANCH: ${{ github.head_ref }}
         run: |
-          BRANCH="${{ github.head_ref }}"
           if [[ "$BRANCH" =~ ^dependabot/ ]] || [[ "$BRANCH" =~ ^release-please-- ]]; then
             echo "Skipping branch name policy for bot branch '$BRANCH'."
             exit 0
@@ -30,6 +31,18 @@ jobs:
             exit 1
           fi
           echo "Branch '$BRANCH' is valid."
+
+  workflow-guards:
+    name: Workflow guards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install PyYAML
+        run: pip install --user pyyaml
+
+      - name: Workflow run interpolation tests
+        run: python3 scripts/workflow-run-interpolation.test.py
 
   android:
     name: Android (${{ matrix.sample }})
@@ -96,10 +109,12 @@ jobs:
 
       - name: Build iOS simulator
         working-directory: samples/${{ matrix.sample }}/ios
+        env:
+          SAMPLE: ${{ matrix.sample }}
         run: |
           set -o pipefail
-          xcodebuild -workspace ${{ matrix.sample }}.xcworkspace \
-            -scheme ${{ matrix.sample }} \
+          xcodebuild -workspace "${SAMPLE}.xcworkspace" \
+            -scheme "${SAMPLE}" \
             -sdk iphonesimulator \
             -configuration Debug \
             -derivedDataPath build \
