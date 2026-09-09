@@ -19,8 +19,9 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - name: Validate branch prefix
+        env:
+          BRANCH: ${{ github.head_ref }}
         run: |
-          BRANCH="${{ github.head_ref }}"
           if [[ "$BRANCH" =~ ^dependabot/ ]] || [[ "$BRANCH" =~ ^release-please-- ]]; then
             echo "Skipping branch name policy for bot branch '$BRANCH'."
             exit 0
@@ -30,6 +31,24 @@ jobs:
             exit 1
           fi
           echo "Branch '$BRANCH' is valid."
+
+  workflow-guards:
+    name: Workflow guards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Workflow run interpolation tests
+        run: node --test scripts/workflow-run-interpolation.test.mjs
 
   android:
     name: Android (${{ matrix.sample }})
@@ -96,10 +115,12 @@ jobs:
 
       - name: Build iOS simulator
         working-directory: samples/${{ matrix.sample }}/ios
+        env:
+          SAMPLE: ${{ matrix.sample }}
         run: |
           set -o pipefail
-          xcodebuild -workspace ${{ matrix.sample }}.xcworkspace \
-            -scheme ${{ matrix.sample }} \
+          xcodebuild -workspace "${SAMPLE}.xcworkspace" \
+            -scheme "${SAMPLE}" \
             -sdk iphonesimulator \
             -configuration Debug \
             -derivedDataPath build \
