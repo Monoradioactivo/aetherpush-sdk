@@ -102,6 +102,12 @@ jobs:
           cache: npm
           cache-dependency-path: samples/${{ matrix.sample }}/package-lock.json
 
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          working-directory: samples/${{ matrix.sample }}
+
       - name: Install sample dependencies
         working-directory: samples/${{ matrix.sample }}
         run: npm ci
