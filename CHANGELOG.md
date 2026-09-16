@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/Monoradioactivo/aetherpush-sdk/compare/v1.3.1...v1.3.2) (2026-09-16)
+
+
+### Bug Fixes
+
+* **deps:** update weekly updates ([#62](https://github.com/Monoradioactivo/aetherpush-sdk/issues/62)) ([a4d1125](https://github.com/Monoradioactivo/aetherpush-sdk/commit/a4d11256f0b4884c814c88bf6445cb81c9f2d39e))
+
 ## [1.3.1](https://github.com/Monoradioactivo/aetherpush-sdk/compare/v1.3.0...v1.3.1) (2026-09-16)
 
 
