@@ -133,3 +133,37 @@ jobs:
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             build | xcbeautify --renderer github-actions
+
+  native-ci:
+    name: Native CI
+    needs:
+      - branch-name
+      - workflow-guards
+      - android
+      - ios
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require the branch name policy on pull requests
+        if: ${{ github.event_name == 'pull_request' && needs.branch-name.result != 'success' }}
+        run: |
+          echo "::error::The Branch name policy job did not succeed; see that job for the allowed prefixes."
+          exit 1
+
+      - name: Require workflow guards
+        if: ${{ needs.workflow-guards.result != 'success' }}
+        run: |
+          echo "::error::Workflow guards did not succeed; see that job."
+          exit 1
+
+      - name: Require Android builds
+        if: ${{ needs.android.result != 'success' }}
+        run: |
+          echo "::error::An Android build job did not succeed; see the Android matrix."
+          exit 1
+
+      - name: Require iOS builds
+        if: ${{ needs.ios.result != 'success' }}
+        run: |
+          echo "::error::An iOS build job did not succeed; see the iOS matrix."
+          exit 1
