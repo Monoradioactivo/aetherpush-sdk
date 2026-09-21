@@ -51,6 +51,9 @@ jobs:
       - name: Release auto-merge gate tests
         run: node --test .github/scripts/release-auto-merge-gate.test.mjs
 
+      - name: Behind bot tests
+        run: node --test .github/scripts/behind-bot.test.mjs
+
   android:
     name: Android (${{ matrix.sample }})
     runs-on: ubuntu-latest
