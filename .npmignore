@@ -96,6 +96,7 @@ packages/
 
 # Github
 .github/
+scripts/*.test.py
 
 # Git
 .git/
