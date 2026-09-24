@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -53,6 +56,9 @@ jobs:
 
       - name: Behind bot tests
         run: node --test .github/scripts/behind-bot.test.mjs
+
+      - name: Commit provenance tests
+        run: node --test .github/scripts/commit-provenance.test.mjs
 
   android:
     name: Android (${{ matrix.sample }})
