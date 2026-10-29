@@ -66,7 +66,7 @@ GEM
     connection_pool (2.5.5)
     drb (2.2.3)
     escape (0.0.4)
-    ethon (0.18.0)
+    ethon (0.19.1)
       ffi (>= 1.15.0)
       logger
     ffi (1.17.4)
@@ -90,8 +90,8 @@ GEM
     rexml (3.4.4)
     ruby-macho (2.5.1)
     securerandom (0.4.1)
-    typhoeus (1.6.0)
-      ethon (>= 0.18.0)
+    typhoeus (1.7.1)
+      ethon (>= 0.19.1, < 0.20.0)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
     xcodeproj (1.25.1)
@@ -141,7 +141,7 @@ CHECKSUMS
   connection_pool (2.5.5) sha256=e54ff92855753df1fd7c59fa04a398833355f27dd14c074f8c83a05f72a716ad
   drb (2.2.3) sha256=0b00d6fdb50995fe4a45dea13663493c841112e4068656854646f418fda13373
   escape (0.0.4) sha256=e49f44ae2b4f47c6a3abd544ae77fe4157802794e32f19b8e773cbc4dcec4169
-  ethon (0.18.0) sha256=b598afc9f30448cb068b850714b7d6948e941476095d04f90a4ac65b8d6efcb2
+  ethon (0.19.1) sha256=f309dec67cfdefaf96b3d1ee0ed4f186eac518f131340f607bb3df3b4e13ddc4
   ffi (1.17.4) sha256=bcd1642e06f0d16fc9e09ac6d49c3a7298b9789bcb58127302f934e437d60acf
   fourflusher (2.3.1) sha256=1b3de61c7c791b6a4e64f31e3719eb25203d151746bb519a0292bff1065ccaa9
   fuzzy_match (2.0.4) sha256=b5de4f95816589c5b5c3ad13770c0af539b75131c158135b3f3bbba75d0cfca5
@@ -161,7 +161,7 @@ CHECKSUMS
   rexml (3.4.4) sha256=19e0a2c3425dfbf2d4fc1189747bdb2f849b6c5e74180401b15734bc97b5d142
   ruby-macho (2.5.1) sha256=9075e52e0f9270b552a90b24fcc6219ad149b0d15eae1bc364ecd0ac8984f5c9
   securerandom (0.4.1) sha256=cc5193d414a4341b6e225f0cb4446aceca8e50d5e1888743fac16987638ea0b1
-  typhoeus (1.6.0) sha256=bacc41c23e379547e29801dc235cd1699b70b955a1ba3d32b2b877aa844c331d
+  typhoeus (1.7.1) sha256=86dcb6d787ee08e34947c9436b24af3c4b02880dc83c466b6ca4dbfc53c2ee7f
   tzinfo (2.0.6) sha256=8daf828cc77bcf7d63b0e3bdb6caa47e2272dcfaf4fbfe46f8c3a9df087a829b
   xcodeproj (1.25.1) sha256=9a2310dccf6d717076e86f602b17c640046b6f1dfe64480044596f6f2f13dc84
 
