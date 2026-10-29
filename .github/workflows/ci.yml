@@ -19,6 +19,7 @@ jobs:
   branch-name:
     name: Branch name policy
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: github.event_name == 'pull_request'
     steps:
       - name: Validate branch prefix
@@ -38,6 +39,7 @@ jobs:
   workflow-guards:
     name: Workflow guards
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
 
@@ -63,6 +65,7 @@ jobs:
   android:
     name: Android (${{ matrix.sample }})
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -97,6 +100,7 @@ jobs:
   ios:
     name: iOS (${{ matrix.sample }})
     runs-on: macos-15
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
@@ -152,6 +156,7 @@ jobs:
       - ios
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Require the branch name policy on pull requests
         if: ${{ github.event_name == 'pull_request' && needs.branch-name.result != 'success' }}
